@@ -4,7 +4,19 @@
 (tool-bar-mode -1)
 (tooltip-mode -1)
 (load-theme 'tango-dark)
+(electric-pair-mode 1)
 
+(fset 'yes-or-no-p 'y-or-n-p)
+
+
+;; Zoom
+(global-set-key (kbd "C-+") 'text-scale-increase)
+(global-set-key (kbd "C--") 'text-scale-decrease)
+(global-set-key [C-wheel-up] 'text-scale-increase)
+(global-set-key [C-wheel-down] 'text-scale-decrease)
+
+
+(setq make-backup-files nil) 
 ;;font
 (set-frame-font "JetBrainsMono Nerd Font 12" nil t)
 
@@ -17,7 +29,8 @@
 (require 'package)
 (setq package-archives '(("melpa". "https://melpa.org/packages/")
 			 ("org". "https://orgmode.org/elpa/")
-			 ("elpa". "https://elpa.gnu.org/packages/")))
+			 ("elpa". "https://elpa.gnu.org/packages/")
+			 ))
 
 (package-initialize)
 (unless package-archive-contents (package-refresh-contents))
@@ -120,19 +133,24 @@
   :ensure t
   :defer t
   :hook ((c-mode . lsp)
+	 (python-mode . lsp)
 	 (lsp-mode . lsp-enable-which-key-integration))
+  :bind (:map evil-normal-state-map
+	      ("ee" . lsp-describe-thing-at-point))
   :commands (lsp lsp-deffered)
   :init
   (setq lsp-keymap "C-c l")
   (setq lsp-file-watch-threshold 15000)
 
-  (setq lsp-clients-clangd-args '("--header-insertion-decorators=0"
+  (setq lsp-clients-clangd-args '("--header-insertion=never"
                                   "--clang-tidy"
-                                  "--enable-config"))
-  
-  (setopt lsp-log-io nil)
-  (setopt lsp-log-max 0)
-  (setopt lsp-headerline-breadcrumb-enable nil)
+                                  "--enable-config"
+				  "--query-driver=**"))
+  (setq lsp-signature-render-documentation nil)
+  ;(setq lsp-completion-provider :none)
+  (setq lsp-log-io nil)
+  (setq lsp-log-max 0)
+  (setq lsp-headerline-breadcrumb-enable nil)
   )
 
 
@@ -166,40 +184,40 @@
   :after lsp
   :commands lsp-ivy-workspace-symbol)
 
-(use-package corfu
-  :ensure t
-  ;; Optional customizations
-  :custom
-  (corfu-cycle t)                 ; Allows cycling through candidates
-  (corfu-auto t)                  ; Enable auto completion
-  (corfu-auto-prefix 2)
-  (corfu-auto-delay 0.8)
-  (corfu-popupinfo-delay '(0.5 . 0.2))
-  (corfu-preview-current 'insert) ; insert previewed candidate
-  (corfu-preselect 'prompt)
-  (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
-  ;; Optionally use TAB for cycling, default is `corfu-complete'.
-  :bind (:map corfu-map
-              ("M-SPC"      . corfu-insert-separator)
-              ("TAB"        . corfu-next)
-              ([tab]        . corfu-next)
-              ("S-TAB"      . corfu-previous)
-              ([backtab]    . corfu-previous)
-              ("S-<return>" . corfu-insert)
-              ("RET"        . nil))
+;; (use-package corfu
+;;   :ensure t
+;;   ;; Optional customizations
+;;   :custom
+;;   (corfu-cycle t)                 ; Allows cycling through candidates
+;;   (corfu-auto t)                  ; Enable auto completion
+;;   (corfu-auto-prefix 2)
+;;   (corfu-auto-delay 0.8)
+;;   (corfu-popupinfo-delay '(0.5 . 0.2))
+;;   (corfu-preview-current 'insert) ; insert previewed candidate
+;;   (corfu-preselect 'prompt)
+;;   (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+;;   ;; Optionally use TAB for cycling, default is `corfu-complete'.
+;;   :bind (:map corfu-map
+;;               ("M-SPC"      . corfu-insert-separator)
+;;               ("TAB"        . corfu-next)
+;;               ([tab]        . corfu-next)
+;;               ("S-TAB"      . corfu-previous)
+;;               ([backtab]    . corfu-previous)
+;;               ("S-<return>" . corfu-insert)
+;;               ("RET"        . nil))
 
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode)
-  (corfu-popupinfo-mode) ; Popup completion info
-  :config
-  (add-hook 'eshell-mode-hook
-            (lambda () (setq-local corfu-quit-at-boundary t
-                                   corfu-quit-no-match t
-                                   corfu-auto nil)
-              (corfu-mode))
-            nil
-            t))
+;;   :init
+;;   (global-corfu-mode)
+;;   (corfu-history-mode)
+;;   (corfu-popupinfo-mode) ; Popup completion info
+;;   :config
+;;   (add-hook 'eshell-mode-hook
+;;             (lambda () (setq-local corfu-quit-at-boundary t
+;;                                    corfu-quit-no-match t
+;;                                    corfu-auto nil)
+;;               (corfu-mode))
+;;             nil
+;;             t))
 
  (setq treesit-language-source-alist
         '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -217,8 +235,14 @@
           (toml "https://github.com/tree-sitter/tree-sitter-toml")
           (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
-
-
+(use-package yasnippet
+  :ensure t
+  :hook ((text-mode
+          prog-mode
+          conf-mode
+          snippet-mode) . yas-minor-mode-on)
+  :init
+  (setq yas-snippet-dir "~/.emacs.d/snippets"))
 
 ;; LATEX
 
@@ -393,12 +417,79 @@
   :ensure t)
 
 
+;; org
+
+;; Syntax highlight in #+BEGIN_SRC blocks
+(setq org-src-fontify-natively t)
+;; Don't prompt before running code in org
+(setq org-confirm-babel-evaluate nil)
+(setq org-src-preserve-indentation nil
+      org-edit-src-content-indentation 0)
+
+(use-package geiser
+  :defer t)
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((C . t)
+   (emacs-lisp . t)
+   (scheme . t)
+   (latex . t)
+   (python . t)
+   (shell . t)
+ )
+)
+
+(use-package org-roam
+  :ensure t
+  :init
+  (setq org-roam-v2-ack t)
+  :custom
+  (org-roam-directory "~/Documents/OrgNotes")
+  (org-roam-completion-everywhere t)
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+	 ("C-c n f" . org-roam-node-find)
+	 ("C-c n i" . org-roam-node-insert)
+	 :map org-mode-map
+	 ("C-M-i" . completion-at-point))
+  :config
+  (org-roam-setup))
+
+(defun org-insert-src-block (src-code-type)
+  "Insert a `SRC-CODE-TYPE' type source code block in org-mode."
+  (interactive
+   (let ((src-code-types
+          '("emacs-lisp" "python" "C" "sh" "C++"
+            "calc" "octave" "latex" "lisp" "matlab"
+	    "org" "scheme" )))
+     (list (ido-completing-read "Source code type: " src-code-types))))
+  (progn
+    (newline-and-indent)
+    (insert (format "#+BEGIN_SRC %s\n" src-code-type))
+    (newline-and-indent)
+    (insert "#+END_SRC\n")
+    (previous-line 2)
+    (org-edit-src-code)))
+
+;; (add-hook 'org-mode-hook '(labmda ()
+;; 				  (flyspell-mode 1)
+;; 				  (local-set-key (kbd "C <tab>")
+;; 						 '')
+;; 				  )
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages nil))
+ '(package-selected-packages
+   '(adaptive-wrap all-the-icons auctex-latexmk company-auctex
+		   company-math corfu doom-modeline evil-collection
+		   evil-nerd-commenter geiser-mit general lsp-ivy
+		   lsp-treemacs lsp-ui org-roam rainbow-delimiters
+		   treemacs-evil treemacs-icons-dired
+		   treemacs-projectile)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
