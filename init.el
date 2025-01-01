@@ -2,12 +2,14 @@
 (setq inhibit-startup-message t)
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
+
 (tooltip-mode -1)
 (load-theme 'tango-dark)
 (electric-pair-mode 1)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
+(setq column-number-mode 1)
 
 ;; Zoom
 (global-set-key (kbd "C-+") 'text-scale-increase)
@@ -18,7 +20,7 @@
 
 (setq make-backup-files nil) 
 ;;font
-(set-frame-font "JetBrainsMono Nerd Font 12" nil t)
+(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
@@ -393,7 +395,7 @@
   (with-eval-after-load 'winum
     (define-key winum-keymap (kbd "SCP tt") #'treemacs-select-window))
   (setq treemacs-follow-after-init t
-        treemacs-is-never-other-window t
+        treemacs-is-never-other-window nil
         treemacs-sorting 'alphabetic-case-insensitive-asc)
 
   :config
@@ -471,11 +473,7 @@
     (previous-line 2)
     (org-edit-src-code)))
 
-;; (add-hook 'org-mode-hook '(labmda ()
-;; 				  (flyspell-mode 1)
-;; 				  (local-set-key (kbd "C <tab>")
-;; 						 '')
-;; 				  )
+
 
 
 (custom-set-variables
