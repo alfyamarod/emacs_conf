@@ -1,4 +1,4 @@
-;; Dont show init screen
+(setenv "LSP_USE_PLISTS" "true")
 (setq inhibit-startup-message t)
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
@@ -96,10 +96,10 @@
   :config
   (general-evil-setup t)
   (general-create-definer alf/leader-keys
-   :states '(normal insert visual emacs motion)
-   :keymaps 'override
-   :prefix "SPC"
-   :global-prefix "C-SPC")
+    :states '(normal insert visual emacs motion)
+    :keymaps 'override
+    :prefix "SPC"
+    :global-prefix "C-SPC")
   (alf/leader-keys
     "w"  '(:ignore t :which-key "window")
     "w h" '(windmove-left :which-key "move left")
@@ -130,16 +130,113 @@
 (use-package hydra)
 
 
+(use-package flycheck
+  :ensure t
+  :config
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+  :bind (:map flycheck-mode-map
+              ("M-n" . flycheck-next-error) ; optional but recommended error navigation
+              ("M-p" . flycheck-previous-error)))
+
+
+(use-package corfu
+  :ensure t
+  ;; Optional customizations
+  :custom
+  (corfu-cycle t)                 ; Allows cycling through candidates
+  (corfu-auto t)                  ; Enable auto completion
+  (corfu-auto-prefix 2)
+  (corfu-auto-delay 0.2)
+  (corfu-popupinfo-delay '(0.5 . 0.2))
+  (corfu-preview-current 'insert) ; insert previewed candidate
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+  ;; Optionally use TAB for cycling, default is `corfu-complete'.
+  :bind (:map corfu-map
+              ("M-SPC"      . corfu-insert-separator)
+              ("TAB"        . corfu-next)
+              ([tab]        . corfu-next)
+              ("S-TAB"      . corfu-previous)
+              ([backtab]    . corfu-previous)
+              ("S-<return>" . corfu-insert)
+              ("RET"        . nil))
+
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode) ; Popup completion info
+  :config
+  (add-hook 'eshell-mode-hook
+            (lambda () (setq-local corfu-quit-at-boundary t
+                                   corfu-quit-no-match t
+                                   corfu-auto nil)
+              (corfu-mode))
+            nil
+            t))
+
+
+
+
 ;; languages and completion
 (use-package lsp-mode
   :ensure t
   :defer t
-  :hook ((c-mode . lsp)
-	 (python-mode . lsp)
-	 (lsp-mode . lsp-enable-which-key-integration))
+  :hook ((lsp-mode . lsp-enable-which-key-integration)
+	 (lsp-mode . lsp-diagnostics-mode)
+	 ((c-mode 
+	   python-mode) . lsp-deffered))
+
   :bind (:map evil-normal-state-map
 	      ("ee" . lsp-describe-thing-at-point))
   :commands (lsp lsp-deffered)
+
+  :custom
+  (lsp-completion-provider :none)       ; Using Corfu as the provider
+  (lsp-diagnostics-provider :flycheck)
+  (lsp-session-file (locate-user-emacs-file ".lsp-session"))
+  (lsp-log-io nil)                      ; IMPORTANT! Use only for debugging! Drastically affects performance
+  (lsp-keep-workspace-alive nil)        ; Close LSP server if all project buffers are closed
+  (lsp-idle-delay 0.5)                  ; Debounce timer for `after-change-function'
+  ;; core
+  (lsp-enable-xref t)                   ; Use xref to find references
+  (lsp-auto-configure t)                ; Used to decide between current active servers
+  (lsp-eldoc-enable-hover t)            ; Display signature information in the echo area
+  (lsp-enable-dap-auto-configure t)     ; Debug support
+  (lsp-enable-file-watchers nil)
+  (lsp-enable-folding nil)              ; I disable folding since I use origami
+  (lsp-enable-imenu t)
+  (lsp-enable-indentation nil)          ; I use prettier
+  (lsp-enable-links nil)                ; No need since we have `browse-url'
+  (lsp-enable-on-type-formatting nil)   ; Prettier handles this
+  (lsp-enable-suggest-server-download t) ; Useful prompt to download LSP providers
+  (lsp-enable-symbol-highlighting t)     ; Shows usages of symbol at point in the current buffer
+  (lsp-enable-text-document-color nil)   ; This is Treesitter's job
+
+  (lsp-ui-sideline-show-hover nil)      ; Sideline used only for diagnostics
+  (lsp-ui-sideline-diagnostic-max-lines 20) ; 20 lines since typescript errors can be quite big
+  ;; completion
+  (lsp-completion-enable t)
+  (lsp-completion-enable-additional-text-edit nil) ; Ex: auto-insert an import for a completion candidate
+  (lsp-enable-snippet t)                         
+  (lsp-completion-show-kind t)                   ; Optional
+  ;; headerline
+  (lsp-headerline-breadcrumb-enable t)  ; Optional, I like the breadcrumbs
+  (lsp-headerline-breadcrumb-enable-diagnostics nil) ; Don't make them red, too noisy
+  (lsp-headerline-breadcrumb-enable-symbol-numbers nil)
+  (lsp-headerline-breadcrumb-icons-enable nil)
+  ;; modeline
+  (lsp-modeline-code-actions-enable nil) ; Modeline should be relatively clean
+  (lsp-modeline-diagnostics-enable nil)  ; Already supported through `flycheck'
+  (lsp-modeline-workspace-status-enable nil) ; Modeline displays "LSP" when lsp-mode is enabled
+  (lsp-signature-doc-lines 1)                ; Don't raise the echo area. It's distracting
+  (lsp-ui-doc-use-childframe t)              ; Show docs for symbol at point
+  (lsp-eldoc-render-all nil)            ; This would be very useful if it would respect `lsp-signature-doc-lines', currently it's distracting
+  ;; lens
+  (lsp-lens-enable nil)                 ; Optional, I don't need it
+  ;; semantic
+  (lsp-semantic-tokens-enable nil)      ; Related to highlighting, and we defer to treesitter
+
+  
   :init
   (setq lsp-keymap "C-c l")
   (setq lsp-file-watch-threshold 15000)
@@ -149,26 +246,32 @@
                                   "--enable-config"
 				  "--query-driver=**"))
   (setq lsp-signature-render-documentation nil)
-  ;(setq lsp-completion-provider :none)
   (setq lsp-log-io nil)
   (setq lsp-log-max 0)
   (setq lsp-headerline-breadcrumb-enable nil)
+  
+
   )
 
 
-(setq gc-cons-threshold (* 100 1024 1024)
-      read-process-output-max (* 1024 1024)
-      treemacs-space-between-root-nodes nil
-      company-idle-delay 0.0
-      company-minimum-prefix-length 1
-      lsp-idle-delay 0.1)  ;; clangd is fast
+;; (setq gc-cons-threshold (* 100 1024 1024)
+;;       read-process-output-max (* 1024 1024)
+;;       treemacs-space-between-root-nodes nil
+;;       company-idle-delay 0.0
+;;       company-minimum-prefix-length 1
+;;       lsp-idle-delay 0.1) 
 
 
 (use-package lsp-ui
   :ensure t
-  :commands (lsp-ui-mode)
+  :commands
+  (lsp-ui-doc-show
+   lsp-ui-doc-glance)
+  :bind (:map lsp-mode-map
+	      ("C-c C-d" . 'lsp-ui-doc-glance))
+  :after (lsp-mode-evil)
   :config
-  (setq lsp-ui-doc-enable nil)
+  (setq lsp-ui-doc-enable t)
   (setq lsp-ui-doc-delay 0.5)
   (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
   (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references)
@@ -186,71 +289,45 @@
   :after lsp
   :commands lsp-ivy-workspace-symbol)
 
-;; (use-package corfu
-;;   :ensure t
-;;   ;; Optional customizations
-;;   :custom
-;;   (corfu-cycle t)                 ; Allows cycling through candidates
-;;   (corfu-auto t)                  ; Enable auto completion
-;;   (corfu-auto-prefix 2)
-;;   (corfu-auto-delay 0.8)
-;;   (corfu-popupinfo-delay '(0.5 . 0.2))
-;;   (corfu-preview-current 'insert) ; insert previewed candidate
-;;   (corfu-preselect 'prompt)
-;;   (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
-;;   ;; Optionally use TAB for cycling, default is `corfu-complete'.
-;;   :bind (:map corfu-map
-;;               ("M-SPC"      . corfu-insert-separator)
-;;               ("TAB"        . corfu-next)
-;;               ([tab]        . corfu-next)
-;;               ("S-TAB"      . corfu-previous)
-;;               ([backtab]    . corfu-previous)
-;;               ("S-<return>" . corfu-insert)
-;;               ("RET"        . nil))
 
-;;   :init
-;;   (global-corfu-mode)
-;;   (corfu-history-mode)
-;;   (corfu-popupinfo-mode) ; Popup completion info
-;;   :config
-;;   (add-hook 'eshell-mode-hook
-;;             (lambda () (setq-local corfu-quit-at-boundary t
-;;                                    corfu-quit-no-match t
-;;                                    corfu-auto nil)
-;;               (corfu-mode))
-;;             nil
-;;             t))
-
- (setq treesit-language-source-alist
-        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-          (c "https://github.com/tree-sitter/tree-sitter-c")
-          (cmake "https://github.com/uyha/tree-sitter-cmake")
-          (common-lisp "https://github.com/theHamsta/tree-sitter-commonlisp")
-          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (html "https://github.com/tree-sitter/tree-sitter-html")
-          (json "https://github.com/tree-sitter/tree-sitter-json")
-          (make "https://github.com/alemuller/tree-sitter-make")
-          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-          (python "https://github.com/tree-sitter/tree-sitter-python")
-          (rust "https://github.com/tree-sitter/tree-sitter-rust")
-          (toml "https://github.com/tree-sitter/tree-sitter-toml")
-          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+(setq treesit-language-source-alist
+      '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+        (c "https://github.com/tree-sitter/tree-sitter-c")
+        (cmake "https://github.com/uyha/tree-sitter-cmake")
+        (common-lisp "https://github.com/theHamsta/tree-sitter-commonlisp")
+        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+        (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+        (html "https://github.com/tree-sitter/tree-sitter-html")
+        (json "https://github.com/tree-sitter/tree-sitter-json")
+        (make "https://github.com/alemuller/tree-sitter-make")
+        (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+        (python "https://github.com/tree-sitter/tree-sitter-python")
+        (rust "https://github.com/tree-sitter/tree-sitter-rust")
+        (toml "https://github.com/tree-sitter/tree-sitter-toml")
+        (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
 (use-package yasnippet
   :ensure t
-  :hook ((text-mode
-          prog-mode
-          conf-mode
-          snippet-mode) . yas-minor-mode-on)
   :init
-  (setq yas-snippet-dir "~/.emacs.d/snippets"))
+  (yas-global-mode)
+  :hook((prog_mode . yas-mionor-mode)
+	(text-mode . yas-minor-mode))
+  )
+
+;; (use-package yasnippet-snippets
+;;   :defer t
+;;   :after yasnippet
+;; )
+
+(use-package ivy-yasnippet
+  :defer t
+  :after (ivy yasnippet)
+  )
 
 ;; LATEX
-
 (use-package auctex
   :defer t 
-:hook (tex-mode . lsp-deferred)
+  :hook (tex-mode . lsp-deferred)
   :hook (latex-mode . lsp-deferred)
   :init
   (setq TeX-command-default   (if (executable-find "latexmk") "LatexMk" "LaTeX")
@@ -332,15 +409,15 @@
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   :general
   (phundrak/major-leader-key
-    :packages 'lsp-mode
-    :keymaps  '(latex-mode-map LaTeX-mode-map)
+   :packages 'lsp-mode
+   :keymaps  '(latex-mode-map LaTeX-mode-map)
    "l"  '(:keymap lsp-command-map :which-key "lsp"))
   (phundrak/major-leader-key
-    :packages 'auctex
-    :keymaps  '(latex-mode-map LaTeX-mode-map)
-    "v" '(TeX-view            :which-key "View")
-    "c" '(TeX-command-run-all :which-key "Compile")
-    "m" '(TeX-command-master  :which-key "Run a command")))
+   :packages 'auctex
+   :keymaps  '(latex-mode-map LaTeX-mode-map)
+   "v" '(TeX-view            :which-key "View")
+   "c" '(TeX-command-run-all :which-key "Compile")
+   "m" '(TeX-command-master  :which-key "Run a command")))
 
 
 (use-package tex-mode
@@ -401,10 +478,6 @@
   :config
   (treemacs-follow-mode -1))
 
-;(use-package treemacs-nerd-icons
-;  :defer t
-;  :config (treemacs-load-theme "nerd-icons"))
-
 
 (use-package treemacs-evil
   :after (treemacs evil)
@@ -427,6 +500,17 @@
 (setq org-confirm-babel-evaluate nil)
 (setq org-src-preserve-indentation nil
       org-edit-src-content-indentation 0)
+(setq org-highlight-latex-and-related '(native))
+(setq org-startup-with-inline-images t)
+(setq org-todo-keywords
+      '((sequence "TODO(t)" "BROKEN(b)" "RUNNING(r)" "VERIFY(v)" "URGENT(u)" "PARTIAL(p)"
+                  "|" "DONE(d)" "OPTIONAL(o)" "DELEGATED(e)" "IRRELEVANT(i)")))
+(setq org-todo-keyword-faces
+      '(("BROKEN" . "red") ("RUNNING" . "yellow")
+        ("VERIFY" . "light goldenrod") ("URGENT" . "orange") ("PARTIAL" . "burlywood")
+        ("OPTIONAL" . "green") ("IRRELEVANT" . "LightBlue1")
+        ("DELEGATED" . "aquamarine3")))
+(setq org-src-window-setup 'current-window)
 
 (use-package geiser
   :defer t)
@@ -439,8 +523,13 @@
    (latex . t)
    (python . t)
    (shell . t)
+   )
  )
-)
+
+
+(use-package org-superstar
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 
 (use-package org-roam
   :ensure t
@@ -457,21 +546,29 @@
   :config
   (org-roam-setup))
 
-(defun org-insert-src-block (src-code-type)
-  "Insert a `SRC-CODE-TYPE' type source code block in org-mode."
-  (interactive
-   (let ((src-code-types
-          '("emacs-lisp" "python" "C" "sh" "C++"
-            "calc" "octave" "latex" "lisp" "matlab"
-	    "org" "scheme" )))
-     (list (ido-completing-read "Source code type: " src-code-types))))
-  (progn
-    (newline-and-indent)
-    (insert (format "#+BEGIN_SRC %s\n" src-code-type))
-    (newline-and-indent)
-    (insert "#+END_SRC\n")
-    (previous-line 2)
-    (org-edit-src-code)))
+(add-hook 'org-mode-hook 'org-indent-mode)
+;; When you want to change the level of an org item, use SMR
+(define-key org-mode-map (kbd "C-c C-g C-r") 'org-shiftmetaright)
+(add-hook 'org-mode-hook 'visual-line-mode)
+
+;; Hide the markers so you just see bold text as BOLD-TEXT and not *BOLD-TEXT*
+(setq org-hide-emphasis-markers t)
+
+(use-package corg
+  :vc (:url "https://github.com/isamert/corg.el"))
+
+(use-package apheleia
+  :ensure t
+  :diminish ""
+  :defines
+  apheleia-formatters
+  apheleia-mode-alist
+  :functions
+  apheleia-global-mode
+  :config
+  (setf (alist-get 'prettier-json apheleia-formatters)
+        '("prettier" "--stdin-filepath" filepath))
+  (apheleia-global-mode +1))
 
 
 
@@ -481,13 +578,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(adaptive-wrap all-the-icons auctex-latexmk company-auctex
-		   company-math corfu doom-modeline evil-collection
-		   evil-nerd-commenter geiser-mit general lsp-ivy
-		   lsp-treemacs lsp-ui org-roam rainbow-delimiters
-		   treemacs-evil treemacs-icons-dired
-		   treemacs-projectile)))
+ '(package-selected-packages nil)
+ '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
