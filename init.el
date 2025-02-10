@@ -1,4 +1,9 @@
-(setenv "LSP_USE_PLISTS" "true")
+(setenv "LSP_USE_PLISTS" "true") ;; in early-init.el
+
+(setq read-process-output-max (* 10 1024 1024)) ;; 10mb
+(setq gc-cons-threshold 200000000)
+
+
 (setq inhibit-startup-message t)
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
@@ -40,24 +45,6 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-;; Completion
-(use-package ivy
-  :diminish
-  :bind (("C-s" . swiper)
-	 :map ivy-minibuffer-map
-	 ("TAB" . ivy-alt-done)
-	 ("C-l" . ivy-alt-done)
-	 ("C-j" . ivy-next-line)
-	 ("C-k" . ivy-previous-line)
-	 :map ivy-switch-buffer-map
-	 ("C-k" . ivy-previous-line)
-	 ("C-l" . ivy-done)
-	 ("C-d" . ivy-switch-buffer-kill)
-	 :map ivy-reverse-i-search-map
-	 ("C-k" . ivy-previous-line)
-	 ("C-d" . ivy-reverse-i-search-kill))
-  :config
-  (ivy-mode 1))
 
 (use-package doom-modeline
   :ensure t
@@ -126,6 +113,26 @@
   (evil-collection-init))
 
 
+;; Completion
+;; (use-package ivy
+;;   :diminish
+;;   :bind (("C-s" . swiper)
+;; 	 :map ivy-minibuffer-map
+;; 	 ("TAB" . ivy-alt-done)
+;; 	 ("C-l" . ivy-alt-done)
+;; 	 ("C-j" . ivy-next-line)
+;; 	 ("C-k" . ivy-previous-line)
+;; 	 :map ivy-switch-buffer-map
+;; 	 ("C-k" . ivy-previous-line)
+;; 	 ("C-l" . ivy-done)
+;; 	 ("C-d" . ivy-switch-buffer-kill)
+;; 	 :map ivy-reverse-i-search-map
+;; 	 ("C-k" . ivy-previous-line)
+;; 	 ("C-d" . ivy-reverse-i-search-kill))
+;;   :config
+;;   (ivy-mode 1))
+
+
 ;; hydra for temporary commands
 (use-package hydra)
 
@@ -145,6 +152,7 @@
   :custom
   (corfu-cycle t)                 ; Allows cycling through candidates
   (corfu-auto t)                  ; Enable auto completion
+  (corfu-separator ?\s)
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.2)
   (corfu-popupinfo-delay '(0.5 . 0.2))
@@ -174,7 +182,20 @@
             nil
             t))
 
+;; (use-package eldoc
+;;   :init
+;;   (global-eldoc-mode))
 
+;; (use-package eglot
+;;   :ensure t
+;;   :hook ((( c-mode python-mopde)
+;;           . eglot-ensure)
+;;          ((cider-mode eglot-managed-mode) . eglot-disable-in-cider))
+;;   :custom
+;;   (eglot-autoshutdown t)
+;;   (eglot-events-buffer-size 0)
+;;   (eglot-extend-to-xref nil)
+;;   (eglot-stay-out-of '(yasnippet)))
 
 
 ;; languages and completion
@@ -183,17 +204,17 @@
   :defer t
   :hook ((lsp-mode . lsp-enable-which-key-integration)
 	 (lsp-mode . lsp-diagnostics-mode)
-	 ((c-mode 
-	   python-mode) . lsp-deffered))
+	 (lsp-mode . lsp-ui-mode)
+	 (c-mode . lsp-deferred) 
+	 (python-mode . lsp-deferred))
 
   :bind (:map evil-normal-state-map
 	      ("ee" . lsp-describe-thing-at-point))
-  :commands (lsp lsp-deffered)
+  :commands (lsp lsp-deferred)
 
   :custom
   (lsp-completion-provider :none)       ; Using Corfu as the provider
   (lsp-diagnostics-provider :flycheck)
-  (lsp-session-file (locate-user-emacs-file ".lsp-session"))
   (lsp-log-io nil)                      ; IMPORTANT! Use only for debugging! Drastically affects performance
   (lsp-keep-workspace-alive nil)        ; Close LSP server if all project buffers are closed
   (lsp-idle-delay 0.5)                  ; Debounce timer for `after-change-function'
@@ -203,7 +224,7 @@
   (lsp-eldoc-enable-hover t)            ; Display signature information in the echo area
   (lsp-enable-dap-auto-configure t)     ; Debug support
   (lsp-enable-file-watchers nil)
-  (lsp-enable-folding nil)              ; I disable folding since I use origami
+  (lsp-enable-folding t)        
   (lsp-enable-imenu t)
   (lsp-enable-indentation nil)          ; I use prettier
   (lsp-enable-links nil)                ; No need since we have `browse-url'
@@ -236,30 +257,18 @@
   ;; semantic
   (lsp-semantic-tokens-enable nil)      ; Related to highlighting, and we defer to treesitter
 
-  
-  :init
-  (setq lsp-keymap "C-c l")
-  (setq lsp-file-watch-threshold 15000)
 
+  :init
   (setq lsp-clients-clangd-args '("--header-insertion=never"
-                                  "--clang-tidy"
-                                  "--enable-config"
+				  "--clang-tidy"
+				  "--enable-config"
 				  "--query-driver=**"))
-  (setq lsp-signature-render-documentation nil)
-  (setq lsp-log-io nil)
-  (setq lsp-log-max 0)
-  (setq lsp-headerline-breadcrumb-enable nil)
-  
+  (setq lsp-use-plists t)
+
 
   )
 
 
-;; (setq gc-cons-threshold (* 100 1024 1024)
-;;       read-process-output-max (* 1024 1024)
-;;       treemacs-space-between-root-nodes nil
-;;       company-idle-delay 0.0
-;;       company-minimum-prefix-length 1
-;;       lsp-idle-delay 0.1) 
 
 
 (use-package lsp-ui
@@ -284,10 +293,10 @@
   (setq lsp-treemacs-sync-mode 1)
   )
 
-(use-package lsp-ivy
-  :defer t
-  :after lsp
-  :commands lsp-ivy-workspace-symbol)
+;; (use-package lsp-ivy
+;;   :defer t
+;;   :after lsp
+;;   :commands lsp-ivy-workspace-symbol)
 
 
 (setq treesit-language-source-alist
@@ -319,10 +328,10 @@
 ;;   :after yasnippet
 ;; )
 
-(use-package ivy-yasnippet
-  :defer t
-  :after (ivy yasnippet)
-  )
+;; (use-package ivy-yasnippet
+;;   :defer t
+;;   :after (ivy yasnippet)
+;;   )
 
 ;; LATEX
 (use-package auctex
@@ -570,6 +579,18 @@
         '("prettier" "--stdin-filepath" filepath))
   (apheleia-global-mode +1))
 
+(use-package pyvenv
+  :ensure t
+  :config
+  (pyvenv-mode t)
+
+  ;; Set correct Python interpreter
+  (setq pyvenv-post-activate-hooks
+        (list (lambda ()
+                (setq python-shell-interpreter (concat pyvenv-virtual-env "bin/python3")))))
+  (setq pyvenv-post-deactivate-hooks
+        (list (lambda ()
+                (setq python-shell-interpreter "python3")))))
 
 
 
