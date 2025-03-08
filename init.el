@@ -264,8 +264,6 @@
 				  "--enable-config"
 				  "--query-driver=**"))
   (setq lsp-use-plists t)
-
-
   )
 
 
@@ -592,14 +590,29 @@
         (list (lambda ()
                 (setq python-shell-interpreter "python3")))))
 
-
+(use-package hl-todo
+  :config
+  (global-hl-todo-mode)
+  (setq hl-todo-keyword-faces
+	'(("TODO"   . "#FF0000")
+          ("FIXME"  . "#FF0000")
+          ("DEBUG"  . "#A020F0"))
+	)
+  )
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(adaptive-wrap all-the-icons apheleia auctex-latexmk company-auctex
+		   company-math corfu corg doom-modeline
+		   evil-collection evil-nerd-commenter flycheck geiser
+		   general ivy-yasnippet lsp-ivy lsp-treemacs lsp-ui
+		   org-roam org-superstar pyvenv rainbow-delimiters
+		   treemacs-evil treemacs-icons-dired
+		   treemacs-projectile))
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
