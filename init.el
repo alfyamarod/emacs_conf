@@ -93,6 +93,7 @@
     "w j" '(windmove-down :which-key "move down")
     "w k" '(windmove-up :whic-key "move up")
     "w l" '(windmove-right :which-key "move right")
+    "t t" '(treemacs :which-key "treemacs")
     ))
 
 (use-package projectile
@@ -139,8 +140,7 @@
 
 (use-package flycheck
   :ensure t
-  :config
-  (add-hook 'after-init-hook #'global-flycheck-mode)
+  :init (global-flycheck-mode)
   :bind (:map flycheck-mode-map
               ("M-n" . flycheck-next-error) ; optional but recommended error navigation
               ("M-p" . flycheck-previous-error)))
@@ -221,7 +221,7 @@
   ;; core
   (lsp-enable-xref t)                   ; Use xref to find references
   (lsp-auto-configure t)                ; Used to decide between current active servers
-  (lsp-eldoc-enable-hover t)            ; Display signature information in the echo area
+  (lsp-eldoc-enable-hover nil)            ; Display signature information in the echo area
   (lsp-enable-dap-auto-configure t)     ; Debug support
   (lsp-enable-file-watchers nil)
   (lsp-enable-folding t)        
@@ -229,7 +229,7 @@
   (lsp-enable-indentation nil)          ; I use prettier
   (lsp-enable-links nil)                ; No need since we have `browse-url'
   (lsp-enable-on-type-formatting nil)   ; Prettier handles this
-  (lsp-enable-suggest-server-download t) ; Useful prompt to download LSP providers
+  (lsp-enable-suggest-server-download nil) ; Useful prompt to download LSP providers
   (lsp-enable-symbol-highlighting t)     ; Shows usages of symbol at point in the current buffer
   (lsp-enable-text-document-color nil)   ; This is Treesitter's job
 
@@ -476,8 +476,6 @@
 (use-package treemacs
   :defer t
   :init
-  (with-eval-after-load 'winum
-    (define-key winum-keymap (kbd "SCP tt") #'treemacs-select-window))
   (setq treemacs-follow-after-init t
         treemacs-is-never-other-window nil
         treemacs-sorting 'alphabetic-case-insensitive-asc)
@@ -605,14 +603,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(adaptive-wrap all-the-icons apheleia auctex-latexmk company-auctex
-		   company-math corfu corg doom-modeline
-		   evil-collection evil-nerd-commenter flycheck geiser
-		   general ivy-yasnippet lsp-ivy lsp-treemacs lsp-ui
-		   org-roam org-superstar pyvenv rainbow-delimiters
-		   treemacs-evil treemacs-icons-dired
-		   treemacs-projectile))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
