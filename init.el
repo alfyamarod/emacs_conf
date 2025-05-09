@@ -114,24 +114,8 @@
   (evil-collection-init))
 
 
-;; Completion
-;; (use-package ivy
-;;   :diminish
-;;   :bind (("C-s" . swiper)
-;; 	 :map ivy-minibuffer-map
-;; 	 ("TAB" . ivy-alt-done)
-;; 	 ("C-l" . ivy-alt-done)
-;; 	 ("C-j" . ivy-next-line)
-;; 	 ("C-k" . ivy-previous-line)
-;; 	 :map ivy-switch-buffer-map
-;; 	 ("C-k" . ivy-previous-line)
-;; 	 ("C-l" . ivy-done)
-;; 	 ("C-d" . ivy-switch-buffer-kill)
-;; 	 :map ivy-reverse-i-search-map
-;; 	 ("C-k" . ivy-previous-line)
-;; 	 ("C-d" . ivy-reverse-i-search-kill))
-;;   :config
-;;   (ivy-mode 1))
+
+
 
 
 ;; hydra for temporary commands
@@ -560,7 +544,7 @@
 (setq org-hide-emphasis-markers t)
 
 (use-package corg
-  :vc (:url "https://github.com/isamert/corg.el"))
+  :vc (:fetcher github :repo "https://github.com/isamert/corg.el"))
 
 (use-package apheleia
   :ensure t
@@ -597,6 +581,26 @@
           ("DEBUG"  . "#A020F0"))
 	)
   )
+
+;;; jupyter
+(use-package
+  jupyter)
+
+;;; code cells
+(use-package code-cells
+  :init
+  (add-hook 'python-mode-hook 'code-cells-mode-maybe)
+  :config
+  (let ((map code-cells-mode-map))
+    (define-key map (kbd "C-c <up>") 'code-cells-backward-cell)
+    (define-key map (kbd "C-c <down>") 'code-cells-forward-cell)
+    (define-key map (kbd "M-<up>") 'code-cells-move-cell-up)
+    (define-key map (kbd "M-<down>") 'code-cells-move-cell-down)
+    (define-key map (kbd "C-c C-c") 'code-cells-eval)
+    ;; Overriding other minor mode bindings requires some insistence...
+    (define-key map [remap jupyter-eval-line-or-region] 'code-cells-eval)))
+
+(add-to-list 'auto-mode-alist '("\\.ipynb\\'" . python-mode))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
