@@ -11,16 +11,29 @@
 (tooltip-mode -1)
 (load-theme 'tango-dark)
 (electric-pair-mode 1)
-
+(delete-selection-mode 1)
+(set-fringe-mode 10)
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq column-number-mode 1)
+					;(dolist (mode '(<<prog-modes-gen()>>))
+					;  (add-hook mode #'hs-minor-mode))
 
 ;; Zoom
 (global-set-key (kbd "C-+") 'text-scale-increase)
 (global-set-key (kbd "C--") 'text-scale-decrease)
 (global-set-key [C-wheel-up] 'text-scale-increase)
 (global-set-key [C-wheel-down] 'text-scale-decrease)
+
+(setq backup-directory-alist `(("." . ,(expand-file-name ".tmp/backups/"
+                                                         user-emacs-directory)))
+      tramp-backup-directory-alist `(("." . ,(expand-file-name ".tmp/tramp-backups/"
+                                                               user-emacs-directory))))
+(setq backup-by-copying t)
+(setq delete-by-moving-to-trash t)
+;;(add-to-list 'default-frame-alist '(alpha-background . 0.9))
+
+
 
 
 (setq make-backup-files nil) 
@@ -96,17 +109,36 @@
     "t t" '(treemacs :which-key "treemacs")
     ))
 
+(use-package vertico
+  :ensure t
+  :hook (after-init . vertico-mode))
+
+(use-package dumb-jump
+  :ensure t
+  :defer
+  :custom
+  (dumb-jump-prefer-searcher 'ag)
+  (dumb-jump-force-searcher 'ag)
+  (dumb-jump-selector 'completing-read)
+  (dumb-jump-default-project "~/work")
+  :init
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  )
+
+
 (use-package projectile
   :diminish projectile-mode
   :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
   :init
   ;; NOTE: Set this to the folder where you keep your Git repos!
   (when (file-directory-p "~/work")
     (setq projectile-project-search-path '("~/work")))
-  (setq projectile-switch-project-action #'projectile-dired))
+  (setq projectile-switch-project-action #'projectile-dired)
+
+  :general
+  (alf/leader-keys
+    "p" '(:keymap projectile-command-map :whic-key "projectile"))
+  )
 
 (use-package evil-collection
   :after evil
@@ -114,20 +146,8 @@
   (evil-collection-init))
 
 
-
-
-
-
 ;; hydra for temporary commands
 (use-package hydra)
-
-
-(use-package flycheck
-  :ensure t
-  :init (global-flycheck-mode)
-  :bind (:map flycheck-mode-map
-              ("M-n" . flycheck-next-error) ; optional but recommended error navigation
-              ("M-p" . flycheck-previous-error)))
 
 
 (use-package corfu
@@ -166,119 +186,6 @@
             nil
             t))
 
-;; (use-package eldoc
-;;   :init
-;;   (global-eldoc-mode))
-
-;; (use-package eglot
-;;   :ensure t
-;;   :hook ((( c-mode python-mopde)
-;;           . eglot-ensure)
-;;          ((cider-mode eglot-managed-mode) . eglot-disable-in-cider))
-;;   :custom
-;;   (eglot-autoshutdown t)
-;;   (eglot-events-buffer-size 0)
-;;   (eglot-extend-to-xref nil)
-;;   (eglot-stay-out-of '(yasnippet)))
-
-
-;; languages and completion
-(use-package lsp-mode
-  :ensure t
-  :defer t
-  :hook ((lsp-mode . lsp-enable-which-key-integration)
-	 (lsp-mode . lsp-diagnostics-mode)
-	 (lsp-mode . lsp-ui-mode)
-	 (c-mode . lsp-deferred) 
-	 (python-mode . lsp-deferred))
-
-  :bind (:map evil-normal-state-map
-	      ("ee" . lsp-describe-thing-at-point))
-  :commands (lsp lsp-deferred)
-
-  :custom
-  (lsp-completion-provider :none)       ; Using Corfu as the provider
-  (lsp-diagnostics-provider :flycheck)
-  (lsp-log-io nil)                      ; IMPORTANT! Use only for debugging! Drastically affects performance
-  (lsp-keep-workspace-alive nil)        ; Close LSP server if all project buffers are closed
-  (lsp-idle-delay 0.5)                  ; Debounce timer for `after-change-function'
-  ;; core
-  (lsp-enable-xref t)                   ; Use xref to find references
-  (lsp-auto-configure t)                ; Used to decide between current active servers
-  (lsp-eldoc-enable-hover nil)            ; Display signature information in the echo area
-  (lsp-enable-dap-auto-configure t)     ; Debug support
-  (lsp-enable-file-watchers nil)
-  (lsp-enable-folding t)        
-  (lsp-enable-imenu t)
-  (lsp-enable-indentation nil)          ; I use prettier
-  (lsp-enable-links nil)                ; No need since we have `browse-url'
-  (lsp-enable-on-type-formatting nil)   ; Prettier handles this
-  (lsp-enable-suggest-server-download nil) ; Useful prompt to download LSP providers
-  (lsp-enable-symbol-highlighting t)     ; Shows usages of symbol at point in the current buffer
-  (lsp-enable-text-document-color nil)   ; This is Treesitter's job
-
-  (lsp-ui-sideline-show-hover nil)      ; Sideline used only for diagnostics
-  (lsp-ui-sideline-diagnostic-max-lines 20) ; 20 lines since typescript errors can be quite big
-  ;; completion
-  (lsp-completion-enable t)
-  (lsp-completion-enable-additional-text-edit nil) ; Ex: auto-insert an import for a completion candidate
-  (lsp-enable-snippet t)                         
-  (lsp-completion-show-kind t)                   ; Optional
-  ;; headerline
-  (lsp-headerline-breadcrumb-enable t)  ; Optional, I like the breadcrumbs
-  (lsp-headerline-breadcrumb-enable-diagnostics nil) ; Don't make them red, too noisy
-  (lsp-headerline-breadcrumb-enable-symbol-numbers nil)
-  (lsp-headerline-breadcrumb-icons-enable nil)
-  ;; modeline
-  (lsp-modeline-code-actions-enable nil) ; Modeline should be relatively clean
-  (lsp-modeline-diagnostics-enable nil)  ; Already supported through `flycheck'
-  (lsp-modeline-workspace-status-enable nil) ; Modeline displays "LSP" when lsp-mode is enabled
-  (lsp-signature-doc-lines 1)                ; Don't raise the echo area. It's distracting
-  (lsp-ui-doc-use-childframe t)              ; Show docs for symbol at point
-  (lsp-eldoc-render-all nil)            ; This would be very useful if it would respect `lsp-signature-doc-lines', currently it's distracting
-  ;; lens
-  (lsp-lens-enable nil)                 ; Optional, I don't need it
-  ;; semantic
-  (lsp-semantic-tokens-enable nil)      ; Related to highlighting, and we defer to treesitter
-
-
-  :init
-  (setq lsp-clients-clangd-args '("--header-insertion=never"
-				  "--clang-tidy"
-				  "--enable-config"
-				  "--query-driver=**"))
-  (setq lsp-use-plists t)
-  )
-
-
-
-
-(use-package lsp-ui
-  :ensure t
-  :commands
-  (lsp-ui-doc-show
-   lsp-ui-doc-glance)
-  :bind (:map lsp-mode-map
-	      ("C-c C-d" . 'lsp-ui-doc-glance))
-  :after (lsp-mode-evil)
-  :config
-  (setq lsp-ui-doc-enable t)
-  (setq lsp-ui-doc-delay 0.5)
-  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references)
-  )
-
-(use-package lsp-treemacs
-  :defer t
-  :after lsp
-  :config
-  (setq lsp-treemacs-sync-mode 1)
-  )
-
-;; (use-package lsp-ivy
-;;   :defer t
-;;   :after lsp
-;;   :commands lsp-ivy-workspace-symbol)
 
 
 (setq treesit-language-source-alist
@@ -293,7 +200,6 @@
         (make "https://github.com/alemuller/tree-sitter-make")
         (markdown "https://github.com/ikatyang/tree-sitter-markdown")
         (python "https://github.com/tree-sitter/tree-sitter-python")
-        (rust "https://github.com/tree-sitter/tree-sitter-rust")
         (toml "https://github.com/tree-sitter/tree-sitter-toml")
         (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
@@ -305,21 +211,16 @@
 	(text-mode . yas-minor-mode))
   )
 
-;; (use-package yasnippet-snippets
-;;   :defer t
-;;   :after yasnippet
-;; )
+(use-package yasnippet-snippets
+  :defer t
+  :after yasnippet
+  )
 
-;; (use-package ivy-yasnippet
-;;   :defer t
-;;   :after (ivy yasnippet)
-;;   )
+
 
 ;; LATEX
 (use-package auctex
   :defer t 
-  :hook (tex-mode . lsp-deferred)
-  :hook (latex-mode . lsp-deferred)
   :init
   (setq TeX-command-default   (if (executable-find "latexmk") "LatexMk" "LaTeX")
         TeX-engine            (if (executable-find "xetex")   'xetex    'default)
@@ -399,11 +300,8 @@
   (add-hook 'TeX-mode-hook #'visual-line-mode)
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   :general
-  (phundrak/major-leader-key
-   :packages 'lsp-mode
-   :keymaps  '(latex-mode-map LaTeX-mode-map)
-   "l"  '(:keymap lsp-command-map :which-key "lsp"))
-  (phundrak/major-leader-key
+  ;; TODO
+  (alf/major-leader-key
    :packages 'auctex
    :keymaps  '(latex-mode-map LaTeX-mode-map)
    "v" '(TeX-view            :which-key "View")
@@ -544,7 +442,7 @@
 (setq org-hide-emphasis-markers t)
 
 (use-package corg
-  :vc (:fetcher github :repo "https://github.com/isamert/corg.el"))
+  :vc (:url "https://github.com/isamert/corg.el"))
 
 (use-package apheleia
   :ensure t
