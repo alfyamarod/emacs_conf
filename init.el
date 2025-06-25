@@ -16,6 +16,7 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq column-number-mode 1)
+(setopt tab-always-indent 'complete)
 					;(dolist (mode '(<<prog-modes-gen()>>))
 					;  (add-hook mode #'hs-minor-mode))
 
@@ -43,7 +44,11 @@
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
 (setq c-default-style "linux"
-      c-basic-offset 4)
+      c-basic-offset 4
+      indent-tabs-mode nil
+      fill-column 120
+      tab-width 4
+      )
 
 ;; Package sources
 (require 'package)
@@ -109,9 +114,6 @@
     "t t" '(treemacs :which-key "treemacs")
     ))
 
-(use-package vertico
-  :ensure t
-  :hook (after-init . vertico-mode))
 
 (use-package dumb-jump
   :ensure t
@@ -150,6 +152,16 @@
 (use-package hydra)
 
 
+(use-package dabbrev
+  :defer t
+  :custom
+  (dabbrev-upcase-means-case-search t)
+  (dabbrev-check-all-buffers nil)
+  (dabbrev-check-other-buffers t)
+  (dabbrev-friend-buffer-function 'dabbrev--same-major-mode-p)
+  (dabbrev-ignored-buffer-regexps '("\\.\\(?:pdf\\|jpe?g\\|png\\)\\'")))
+
+
 (use-package corfu
   :ensure t
   ;; Optional customizations
@@ -175,8 +187,9 @@
 
   :init
   (global-corfu-mode)
-  (corfu-history-mode)
-  (corfu-popupinfo-mode) ; Popup completion info
+  ;; TODO
+  ;;(corfu-history-mode)
+  ;;(corfu-popupinfo-mode) ; Popup completion info
   :config
   (add-hook 'eshell-mode-hook
             (lambda () (setq-local corfu-quit-at-boundary t
@@ -185,6 +198,32 @@
               (corfu-mode))
             nil
             t))
+
+
+(use-package cape
+  :ensure t
+  :bind ("C-c SPC" . cape-dabbrev)
+  :custom
+  (cape-dict-case-replace nil)
+  (cape-dabbrev-buffer-function 'cape-same-mode-buffers)
+
+  :init
+  (defun my/cape-dict-only-in-comments ()
+    (cape-wrap-inside-comment 'cape-dict))
+
+  (defun my/cape-dict-only-in-strings ()
+    (cape-wrap-inside-string 'cape-dict))
+
+  (defun my/cape-yasnippet-keyword-dabbrev ()
+    (cape-wrap-super #'yasnippet-capf #'cape-keyword #'cape-dabbrev))
+
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'my/cape-yasnippet-keyword-dabbrev)
+  (add-to-list 'completion-at-point-functions #'my/cape-dict-only-in-strings)
+  (add-to-list 'completion-at-point-functions #'my/cape-dict-only-in-comments))
+
+
+
 
 
 
@@ -205,10 +244,11 @@
 
 (use-package yasnippet
   :ensure t
-  :init
-  (yas-global-mode)
+  :defer
   :hook((prog_mode . yas-mionor-mode)
-	(text-mode . yas-minor-mode))
+	(text-mode . yas-minor-mode)
+	(fundamental-mode . yas-minor-mode)
+	)
   )
 
 (use-package yasnippet-snippets
@@ -216,6 +256,14 @@
   :after yasnippet
   )
 
+
+
+
+(use-package yasnippet-capf
+  :ensure t
+  :after cape
+  :config
+  (add-to-list 'completion-at-point-functions #'yasnippet-capf))
 
 
 ;; LATEX
@@ -335,21 +383,21 @@
   :config
   (auctex-latexmk-setup))
 
-(use-package company-auctex
-  :defer t
-  :after (company auctex)
-  :config
-  (company-auctex-init))
+;; (use-package company-auctex
+;;   :defer t
+;;   :after (company auctex)
+;;   :config
+;;   (company-auctex-init))
 
-(use-package company-math
-  :defer t
-  :after (company auctex)
-  :config
-  (defun my-latex-mode-setup ()
-    (setq-local company-backends
-                (append '((company-math-symbols-latex company-latex-commands))
-                        company-backends)))
-  (add-hook 'TeX-mode-hook #'my-latex-mode-setup))
+;; (use-package company-math
+;;   :defer t
+;;   :after (company auctex)
+;;   :config
+;;   (defun my-latex-mode-setup ()
+;;     (setq-local company-backends
+;;                 (append '((company-math-symbols-latex company-latex-commands))
+;;                         company-backends)))
+;;   (add-hook 'TeX-mode-hook #'my-latex-mode-setup))
 
 
 (use-package evil-nerd-commenter
@@ -442,7 +490,7 @@
 (setq org-hide-emphasis-markers t)
 
 (use-package corg
-  :vc (:url "https://github.com/isamert/corg.el"))
+  :vc (:fetcher github :repo "https://github.com/isamert/corg.el"))
 
 (use-package apheleia
   :ensure t
@@ -505,7 +553,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(dumb-jump yasnippet-snippets which-key vc-use-package treemacs-projectile treemacs-icons-dired treemacs-evil rainbow-delimiters pyvenv org-superstar org-roam mathpix.el jupyter hl-todo general geiser flycheck evil-nerd-commenter evil-collection ein doom-modeline corg corfu code-cells chatgpt-shell cdlatex auctex-latexmk apheleia all-the-icons adaptive-wrap))
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
