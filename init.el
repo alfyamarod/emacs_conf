@@ -1,9 +1,10 @@
+;; -*- lexical-binding: t; -*-
 (setenv "LSP_USE_PLISTS" "true") ;; in early-init.el
 
 (setq read-process-output-max (* 10 1024 1024)) ;; 10mb
 (setq gc-cons-threshold 200000000)
 
-
+(setq visible-bell t)
 (setq inhibit-startup-message t)
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
@@ -45,7 +46,7 @@
 
 (setq c-default-style "linux"
       c-basic-offset 4
-      indent-tabs-mode nil
+      indent-tabs-mode t
       fill-column 120
       tab-width 4
       )
@@ -244,8 +245,10 @@
 
 (use-package yasnippet
   :ensure t
-  :defer
-  :hook((prog_mode . yas-mionor-mode)
+  :defer t
+  :init
+  (yas-global-mode)
+  :hook((prog_mode . yas-minor-mode)
 	(text-mode . yas-minor-mode)
 	(fundamental-mode . yas-minor-mode)
 	)
@@ -383,21 +386,6 @@
   :config
   (auctex-latexmk-setup))
 
-;; (use-package company-auctex
-;;   :defer t
-;;   :after (company auctex)
-;;   :config
-;;   (company-auctex-init))
-
-;; (use-package company-math
-;;   :defer t
-;;   :after (company auctex)
-;;   :config
-;;   (defun my-latex-mode-setup ()
-;;     (setq-local company-backends
-;;                 (append '((company-math-symbols-latex company-latex-commands))
-;;                         company-backends)))
-;;   (add-hook 'TeX-mode-hook #'my-latex-mode-setup))
 
 
 (use-package evil-nerd-commenter
@@ -470,16 +458,19 @@
   :ensure t
   :init
   (setq org-roam-v2-ack t)
+  (setq org-roam-database-connector 'sqlite-builtin)
   :custom
   (org-roam-directory "~/Documents/OrgNotes")
   (org-roam-completion-everywhere t)
   :bind (("C-c n l" . org-roam-buffer-toggle)
 	 ("C-c n f" . org-roam-node-find)
 	 ("C-c n i" . org-roam-node-insert)
+	 ("C-c n c" . org-roam-capture)
 	 :map org-mode-map
 	 ("C-M-i" . completion-at-point))
   :config
-  (org-roam-setup))
+  (org-roam-db-autosync-mode)
+  )
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 ;; When you want to change the level of an org item, use SMR
@@ -490,7 +481,7 @@
 (setq org-hide-emphasis-markers t)
 
 (use-package corg
-  :vc (:fetcher github :repo "https://github.com/isamert/corg.el"))
+  :vc (:url "https://github.com/isamert/corg.el"))
 
 (use-package apheleia
   :ensure t
@@ -524,7 +515,9 @@
   (setq hl-todo-keyword-faces
 	'(("TODO"   . "#FF0000")
           ("FIXME"  . "#FF0000")
-          ("DEBUG"  . "#A020F0"))
+          ("DEBUG"  . "#A020F0")
+	  ("NOTE"  . "#00FF32")
+	  )
 	)
   )
 
@@ -553,8 +546,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(dumb-jump yasnippet-snippets which-key vc-use-package treemacs-projectile treemacs-icons-dired treemacs-evil rainbow-delimiters pyvenv org-superstar org-roam mathpix.el jupyter hl-todo general geiser flycheck evil-nerd-commenter evil-collection ein doom-modeline corg corfu code-cells chatgpt-shell cdlatex auctex-latexmk apheleia all-the-icons adaptive-wrap))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
