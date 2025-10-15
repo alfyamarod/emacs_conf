@@ -40,7 +40,7 @@
 
 (setq make-backup-files nil) 
 ;;font
-(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+(set-frame-font "JetBrainsMono Nerd Font 14" nil t)
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
@@ -384,6 +384,8 @@
   (setq auctex-latexmk-inherit-TeX-PDF-mode t)
   (add-hook 'LaTeX-mode (lambda () (setq TeX-command-default "LatexMk")))
   :config
+
+  ;; TODO 
   (auctex-latexmk-setup))
 
 
@@ -449,28 +451,46 @@
    )
  )
 
+(use-package org-ref)
+(require 'bibtex)
+
+(setq bibtex-autokey-year-length 4
+      bibtex-autokey-name-year-separator "-"
+      bibtex-autokey-year-title-separator "-"
+      bibtex-autokey-titleword-separator "-"
+      bibtex-autokey-titlewords 2
+      bibtex-autokey-titlewords-stretch 1
+      bibtex-autokey-titleword-length 5)
+
+(define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-entry-menu)
+
+(setq bibtex-completion-bibliography '("~/Documents/bibliography/references.bib"
+				       "~/Documents/bibliography/master.bib"
+				       "~/Documents/bibliography/archive.bib")
+      bibtex-completion-library-path '("~/Documents/bibliography/bibtex-pdfs/")
+      bibtex-completion-notes-path "~/Documents/notes/"
+      bibtex-completion-notes-template-multiple-files "* ${author-or-editor}, ${title}, ${journal}, (${year}) :${=type=}: \n\nSee [[cite:&${=key=}]]\n"
+
+      bibtex-completion-additional-search-fields '(keywords)
+      bibtex-completion-display-formats
+      '((article       . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${journal:40}")
+	(inbook        . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} Chapter ${chapter:32}")
+	(incollection  . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+	(inproceedings . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+	(t             . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*}"))
+      bibtex-completion-pdf-open-function
+      (lambda (fpath)
+	(call-process "open" nil 0 nil fpath)))
+
+(define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+
+(setq org-latex-pdf-process (list "latexmk -shell-escape -bibtex -f -pdf %f"))
+(setq org-ref-show-equation-images-in-tooltips t)
 
 (use-package org-superstar
   :config
   (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 
-(use-package org-roam
-  :ensure t
-  :init
-  (setq org-roam-v2-ack t)
-  (setq org-roam-database-connector 'sqlite-builtin)
-  :custom
-  (org-roam-directory "~/Documents/OrgNotes")
-  (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
-	 ("C-c n f" . org-roam-node-find)
-	 ("C-c n i" . org-roam-node-insert)
-	 ("C-c n c" . org-roam-capture)
-	 :map org-mode-map
-	 ("C-M-i" . completion-at-point))
-  :config
-  (org-roam-db-autosync-mode)
-  )
 
 (add-hook 'org-mode-hook 'org-indent-mode)
 ;; When you want to change the level of an org item, use SMR
@@ -546,7 +566,11 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(adaptive-wrap all-the-icons apheleia auctex-latexmk cape code-cells corfu corg doom-modeline dumb-jump evil-collection
+		   evil-nerd-commenter geiser general hl-todo jupyter org-ref org-roam org-superstar pyvenv
+		   rainbow-delimiters treemacs-evil treemacs-icons-dired treemacs-projectile yasnippet-capf
+		   yasnippet-snippets))
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
