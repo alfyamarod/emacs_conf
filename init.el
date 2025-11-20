@@ -377,16 +377,9 @@
   :hook (LaTeX-mode . adaptative-wrap-prefix-mode)
   :init (setq-default adaptative-wrap-extra-indent 0))
 
-(use-package auctex-latexmk
-  :after auctex
-  :defer t
-  :init
-  (setq auctex-latexmk-inherit-TeX-PDF-mode t)
-  (add-hook 'LaTeX-mode (lambda () (setq TeX-command-default "LatexMk")))
-  :config
 
-  ;; TODO 
-  (auctex-latexmk-setup))
+
+
 
 
 
@@ -427,14 +420,6 @@
       org-edit-src-content-indentation 0)
 (setq org-highlight-latex-and-related '(native))
 (setq org-startup-with-inline-images t)
-(setq org-todo-keywords
-      '((sequence "TODO(t)" "BROKEN(b)" "RUNNING(r)" "VERIFY(v)" "URGENT(u)" "PARTIAL(p)"
-                  "|" "DONE(d)" "OPTIONAL(o)" "DELEGATED(e)" "IRRELEVANT(i)")))
-(setq org-todo-keyword-faces
-      '(("BROKEN" . "red") ("RUNNING" . "yellow")
-        ("VERIFY" . "light goldenrod") ("URGENT" . "orange") ("PARTIAL" . "burlywood")
-        ("OPTIONAL" . "green") ("IRRELEVANT" . "LightBlue1")
-        ("DELEGATED" . "aquamarine3")))
 (setq org-src-window-setup 'current-window)
 
 (use-package geiser
@@ -450,6 +435,8 @@
    (shell . t)
    )
  )
+
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
 
 (use-package org-ref)
 (require 'bibtex)
@@ -496,6 +483,12 @@
 ;; When you want to change the level of an org item, use SMR
 (define-key org-mode-map (kbd "C-c C-g C-r") 'org-shiftmetaright)
 (add-hook 'org-mode-hook 'visual-line-mode)
+(add-hook 'org-mode-hook 'hl-todo-mode)
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-ca" 'org-agenda)
+(setq org-log-done t)
+
+(setq org-agenda-files (list "~/Documents/org/work.org" "~/Documents/org/home.org"))
 
 ;; Hide the markers so you just see bold text as BOLD-TEXT and not *BOLD-TEXT*
 (setq org-hide-emphasis-markers t)
@@ -568,7 +561,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages nil)
- '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el"))))
+ '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
+ '(warning-suppress-types '((use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
