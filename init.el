@@ -454,7 +454,7 @@
 (setq bibtex-completion-bibliography '("~/Documents/bibliography/references.bib"
 				       "~/Documents/bibliography/master.bib"
 				       "~/Documents/bibliography/archive.bib")
-      bibtex-completion-library-path '("~/Documents/bibliography/bibtex-pdfs/")
+      bibtex-completion-library-path '("~/Documents/bibliography/bibtex_pdfs/")
       bibtex-completion-notes-path "~/Documents/notes/"
       bibtex-completion-notes-template-multiple-files "* ${author-or-editor}, ${title}, ${journal}, (${year}) :${=type=}: \n\nSee [[cite:&${=key=}]]\n"
 
@@ -492,6 +492,9 @@
 
 ;; Hide the markers so you just see bold text as BOLD-TEXT and not *BOLD-TEXT*
 (setq org-hide-emphasis-markers t)
+
+(setq org-latex-packages-alist '(("" "tikz" t)
+				 ("" "tikz-cd" t)))
 
 (use-package corg
   :vc (:url "https://github.com/isamert/corg.el"))
@@ -560,6 +563,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(org-agenda-files '("/home/yamamoto/Documents/org/work.org"))
  '(package-selected-packages nil)
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
  '(warning-suppress-types '((use-package))))
