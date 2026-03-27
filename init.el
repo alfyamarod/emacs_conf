@@ -31,13 +31,14 @@
                                                          user-emacs-directory)))
       tramp-backup-directory-alist `(("." . ,(expand-file-name ".tmp/tramp-backups/"
                                                                user-emacs-directory))))
-(setq backup-by-copying t)
+
 (setq delete-by-moving-to-trash t)
 ;;(add-to-list 'default-frame-alist '(alpha-background . 0.9))
 
 
 
-
+;; FIXME not working
+(setq backup-by-copying t)
 (setq make-backup-files nil) 
 ;;font
 (set-frame-font "JetBrainsMono Nerd Font 14" nil t)
@@ -48,8 +49,11 @@
       c-basic-offset 4
       indent-tabs-mode t
       fill-column 120
-      tab-width 4
+      tab-width 8
       )
+
+;;electric pair mode
+(electric-pair-mode 1)
 
 ;; Package sources
 (require 'package)
@@ -499,18 +503,18 @@
 (use-package corg
   :vc (:url "https://github.com/isamert/corg.el"))
 
-(use-package apheleia
-  :ensure t
-  :diminish ""
-  :defines
-  apheleia-formatters
-  apheleia-mode-alist
-  :functions
-  apheleia-global-mode
-  :config
-  (setf (alist-get 'prettier-json apheleia-formatters)
-        '("prettier" "--stdin-filepath" filepath))
-  (apheleia-global-mode +1))
+;; (use-package apheleia
+;;   :ensure t
+;;   :diminish ""
+;;   :defines
+;;   apheleia-formatters
+;;   apheleia-mode-alist
+;;   :functions
+;;   apheleia-global-mode
+;;   :config
+;;   (setf (alist-get 'clang-format apheleia-formatters)
+;;         '("clang-format" "--sort-includes")
+;; 	(apheleia-global-mode +1))
 
 (use-package pyvenv
   :ensure t
@@ -558,13 +562,54 @@
 
 (add-to-list 'auto-mode-alist '("\\.ipynb\\'" . python-mode))
 
+(defun my-md-to-org-region (start end)
+  "Convert region from markdown to org"
+  (interactive "r")
+  (shell-command-on-region start end "pandoc -f markdown -t org" t t))
+
+
+(use-package orderless
+  :init
+  ;; Tune the global completion style settings to your liking!
+  ;; This affects the minibuffer and non-lsp completion at point.
+  (setq completion-styles '(orderless partial-completion basic)
+        completion-category-defaults nil
+        completion-category-overrides nil))
+
+(use-package lsp-mode
+  :custom
+  (lsp-completion-provider :none) ;; we use Corfu!
+  :init
+  (defun my/lsp-mode-setup-completion ()
+    (add-to-list 'completion-category-overrides '(lsp-capf (styles orderless))))    
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion))
+
+(use-package eglot
+  :ensure nil
+  :bind (:map eglot-modemap
+	      ("SPC e r" . eglot-rename)
+	      ("SPC l a" . eglot-code-actions)
+	      ("SPC l f" . eglot-format)
+	      ))
+
+;; Option 1: Specify explicitly to use Orderless for Eglot
+(setq completion-category-overrides '((eglot (styles orderless))
+                                      (eglot-capf (styles orderless))))
+
+(advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(org-agenda-files '("/home/yamamoto/Documents/org/work.org"))
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(adaptive-wrap all-the-icons apheleia auctex-latexmk cape code-cells corfu corg doom-modeline dumb-jump evil-collection
+		   evil-nerd-commenter geiser general hl-todo jupyter lsp-mode orderless org-ref org-superstar pyvenv
+		   rainbow-delimiters treemacs-evil treemacs-icons-dired treemacs-projectile yasnippet-capf
+		   yasnippet-snippets))
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces
