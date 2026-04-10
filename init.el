@@ -1,22 +1,40 @@
 ;; -*- lexical-binding: t; -*-
 (setenv "LSP_USE_PLISTS" "true") ;; in early-init.el
 
-(setq read-process-output-max (* 10 1024 1024)) ;; 10mb
-(setq gc-cons-threshold 200000000)
+(setq ;;file-name-handler-alist nil
+      read-process-output-max (* 10 1024 1024) ;; 10mb
+      gc-cons-threshold 200000000
+      auto-window-vscroll nil
+      )
 
-(setq visible-bell t)
-(setq inhibit-startup-message t)
+(setq visible-bell t
+      inhibit-startup-message t
+      scroll-conservatively 101
+      use-dialog-box nil
+      x-gtk-use-system-tooltips nil
+      confirm-kill-processes nil
+      )
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
-
+(menu-bar-mode -1)
 (tooltip-mode -1)
-(load-theme 'tango-dark)
+(blink-cursor-mode 0)
+(winner-mode t)
+(desktop-save-mode t)
+(save-place-mode t)
+
+(load-theme 'modus-vivendi-deuteranopia)
 (electric-pair-mode 1)
 (delete-selection-mode 1)
-(set-fringe-mode 10)
 (fset 'yes-or-no-p 'y-or-n-p)
 
-(setq column-number-mode 1)
+(visual-line-mode t)
+(global-visual-line-mode t)
+(setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
+(fringe-mode 5)
+
+
+;;(setq column-number-mode 1)
 (setopt tab-always-indent 'complete)
 					;(dolist (mode '(<<prog-modes-gen()>>))
 					;  (add-hook mode #'hs-minor-mode))
@@ -38,10 +56,10 @@
 
 
 ;; FIXME not working
-(setq backup-by-copying t)
+;;(setq backup-by-copying t)
 (setq make-backup-files nil) 
 ;;font
-(set-frame-font "JetBrainsMono Nerd Font 14" nil t)
+(set-frame-font "JetBrainsMono Nerd Font 13" nil t)
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
@@ -52,8 +70,6 @@
       tab-width 8
       )
 
-;;electric pair mode
-(electric-pair-mode 1)
 
 ;; Package sources
 (require 'package)
@@ -72,7 +88,18 @@
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
+  :custom (
+	   (doom-modeline-height 20)
+	   (doom-modeline-hud nil)
+	   (doom-modeline-buffer-encoding nil)
+	   (doom-modeline-minor-modes nil)
+	   (doom-modeline-persp-name nil)
+	   (doom-modeline-enable-buffer-position t)
+	   (doom-modeline-env-version nil)
+	   (doom-modeline-modal nil)
+	   ))
+
+(setq nerd-icons-scale-factor 1.3)
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -83,7 +110,6 @@
   :config
   (setq which-key-idle-delay 0.3))
 
-(use-package all-the-icons)
 
 (use-package evil
   :init
@@ -114,10 +140,11 @@
     "w"  '(:ignore t :which-key "window")
     "w h" '(windmove-left :which-key "move left")
     "w j" '(windmove-down :which-key "move down")
-    "w k" '(windmove-up :whic-key "move up")
+    "w k" '(windmove-up :which-key "move up")
     "w l" '(windmove-right :which-key "move right")
     "t t" '(treemacs :which-key "treemacs")
-    ))
+    "d d" '(dired :which-key "dired")
+        ))
 
 
 (use-package dumb-jump
@@ -144,7 +171,7 @@
 
   :general
   (alf/leader-keys
-    "p" '(:keymap projectile-command-map :whic-key "projectile"))
+    "p" '(:keymap projectile-command-map :which-key "projectile"))
   )
 
 (use-package evil-collection
@@ -153,8 +180,8 @@
   (evil-collection-init))
 
 
-;; hydra for temporary commands
-(use-package hydra)
+;; ;; hydra for temporary commands
+;; (use-package hydra)
 
 
 (use-package dabbrev
@@ -229,9 +256,6 @@
 
 
 
-
-
-
 (setq treesit-language-source-alist
       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
         (c "https://github.com/tree-sitter/tree-sitter-c")
@@ -247,12 +271,15 @@
         (toml "https://github.com/tree-sitter/tree-sitter-toml")
         (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
+
+
+
 (use-package yasnippet
   :ensure t
   :defer t
   :init
   (yas-global-mode)
-  :hook((prog_mode . yas-minor-mode)
+  :hook((prog-mode . yas-minor-mode)
 	(text-mode . yas-minor-mode)
 	(fundamental-mode . yas-minor-mode)
 	)
@@ -263,14 +290,10 @@
   :after yasnippet
   )
 
-
-
-
 (use-package yasnippet-capf
   :ensure t
   :after cape
-  :config
-  (add-to-list 'completion-at-point-functions #'yasnippet-capf))
+  )
 
 
 ;; LATEX
@@ -356,7 +379,7 @@
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   :general
   ;; TODO
-  (alf/major-leader-key
+  (alf/leader-keys
    :packages 'auctex
    :keymaps  '(latex-mode-map LaTeX-mode-map)
    "v" '(TeX-view            :which-key "View")
@@ -378,10 +401,8 @@
 (use-package adaptive-wrap
   :defer t
   :after auctex
-  :hook (LaTeX-mode . adaptative-wrap-prefix-mode)
-  :init (setq-default adaptative-wrap-extra-indent 0))
-
-
+  :hook (LaTeX-mode . adaptive-wrap-prefix-mode)
+  :init (setq-default adaptive-wrap-extra-indent 0))
 
 
 
@@ -414,8 +435,7 @@
   :ensure t)
 
 
-;; org
-
+;; ORG
 ;; Syntax highlight in #+BEGIN_SRC blocks
 (setq org-src-fontify-natively t)
 ;; Don't prompt before running code in org
@@ -442,6 +462,7 @@
 
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
 
+;; FIXME warnings
 (use-package org-ref)
 (require 'bibtex)
 
@@ -503,18 +524,6 @@
 (use-package corg
   :vc (:url "https://github.com/isamert/corg.el"))
 
-;; (use-package apheleia
-;;   :ensure t
-;;   :diminish ""
-;;   :defines
-;;   apheleia-formatters
-;;   apheleia-mode-alist
-;;   :functions
-;;   apheleia-global-mode
-;;   :config
-;;   (setf (alist-get 'clang-format apheleia-formatters)
-;;         '("clang-format" "--sort-includes")
-;; 	(apheleia-global-mode +1))
 
 (use-package pyvenv
   :ensure t
@@ -576,22 +585,40 @@
         completion-category-defaults nil
         completion-category-overrides nil))
 
-(use-package lsp-mode
-  :custom
-  (lsp-completion-provider :none) ;; we use Corfu!
-  :init
-  (defun my/lsp-mode-setup-completion ()
-    (add-to-list 'completion-category-overrides '(lsp-capf (styles orderless))))    
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion))
 
 (use-package eglot
-  :ensure nil
-  :bind (:map eglot-modemap
-	      ("SPC e r" . eglot-rename)
-	      ("SPC l a" . eglot-code-actions)
-	      ("SPC l f" . eglot-format)
-	      ))
+  :ensure t
+  :defer t
+  :custom
+  (eglot-send-changes-idle-time 0.5)
+  (eglot-autoshutdown t)
+  :hook ((c-mode . eglot-ensure)
+	 (c++-mode . eglot-ensure)
+	 (python-mode . eglot-ensure))
+  :config
+  (alf/leader-keys
+    :keymaps 'eglot-mode-map
+    "l" '(:ignore t :which-key "lsp")
+    "l d" '(xref-find-definitions :which-key "definition")
+    "l r" '(xref-find-references :which-key "references")
+    "l a" '(eglot-code-actions :which-key "code actions")
+    "l R" '(eglot-rename :which-key "rename")
+    "l f" '(eglot-format :which-key "format")
+    "l h" '(eldoc :which-key "hover")
+    "l F" '(flymake-mode :which-key "flymake on/off")
+    "l n" '(flymake-goto-next-error :which-key "next error")
+    "l p" '(flymake-goto-prev-error :which-key "prev error")
+    "l q" '(eglot-shutdown :which-key "shutdown")
+    )
+  )
+
+(with-eval-after-load 'eglot
+(add-to-list 'eglot-server-programs
+             '((c++-mode c-mode)
+               . ("clangd"
+                  "-j=2"
+                  "--header-insertion=never"
+                  "--header-insertion-decorators=0"))))
 
 ;; Option 1: Specify explicitly to use Orderless for Eglot
 (setq completion-category-overrides '((eglot (styles orderless))
@@ -606,7 +633,7 @@
  ;; If there is more than one, they won't work right.
  '(org-agenda-files '("/home/yamamoto/Documents/org/work.org"))
  '(package-selected-packages
-   '(adaptive-wrap all-the-icons apheleia auctex-latexmk cape code-cells corfu corg doom-modeline dumb-jump evil-collection
+   '(adaptive-wrap apheleia auctex-latexmk cape code-cells corfu corg doom-modeline dumb-jump evil-collection
 		   evil-nerd-commenter geiser general hl-todo jupyter lsp-mode orderless org-ref org-superstar pyvenv
 		   rainbow-delimiters treemacs-evil treemacs-icons-dired treemacs-projectile yasnippet-capf
 		   yasnippet-snippets))
