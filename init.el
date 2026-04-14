@@ -204,7 +204,7 @@
   (corfu-auto-prefix 2)
   (corfu-auto-delay 0.2)
   (corfu-popupinfo-delay '(0.5 . 0.2))
-  (corfu-preview-current 'insert) ; insert previewed candidate
+  (corfu-preview-current nil)      ; don't auto-insert previewed candidate
   (corfu-preselect 'prompt)
   (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
   ;; Optionally use TAB for cycling, default is `corfu-complete'.
@@ -590,6 +590,7 @@
   :ensure t
   :defer t
   :custom
+  (eglot-sync-connect 1)
   (eglot-send-changes-idle-time 0.5)
   (eglot-autoshutdown t)
   :hook ((c-mode . eglot-ensure)
@@ -624,7 +625,16 @@
 (setq completion-category-overrides '((eglot (styles orderless))
                                       (eglot-capf (styles orderless))))
 
-(advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+(defun my/eglot-setup-capf ()
+  "Set buffer-local capfs for eglot buffers, combining eglot with snippets."
+  (setq-local completion-at-point-functions
+              (list (cape-wrap-buster
+                     (cape-capf-super #'eglot-completion-at-point
+                                      #'yasnippet-capf))
+                    #'cape-file
+                    #'cape-dabbrev)))
+
+(add-hook 'eglot-managed-mode-hook #'my/eglot-setup-capf)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
