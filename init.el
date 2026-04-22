@@ -55,9 +55,11 @@
 
 
 
-;; FIXME not working
-;;(setq backup-by-copying t)
 (setq make-backup-files nil) 
+(make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
+
+(setq auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
+      auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t)))
 ;;font
 (set-frame-font "JetBrainsMono Nerd Font 13" nil t)
 
@@ -202,7 +204,7 @@
   (corfu-auto t)                  ; Enable auto completion
   (corfu-separator ?\s)
   (corfu-auto-prefix 2)
-  (corfu-auto-delay 0.2)
+  (corfu-auto-delay 0.5)
   (corfu-popupinfo-delay '(0.5 . 0.2))
   (corfu-preview-current nil)      ; don't auto-insert previewed candidate
   (corfu-preselect 'prompt)
@@ -416,10 +418,12 @@
   :init
   (setq treemacs-follow-after-init t
         treemacs-is-never-other-window nil
-        treemacs-sorting 'alphabetic-case-insensitive-asc)
+        treemacs-sorting 'alphabetic-case-insensitive-asc
+        treemacs-select-when-already-in-treemacs 'stay)
 
   :config
-  (treemacs-follow-mode -1))
+  (treemacs-follow-mode -1)
+  (setq treemacs-window-select-behaviour 'original))
 
 
 (use-package treemacs-evil
@@ -587,7 +591,7 @@
 
 
 (use-package eglot
-  :ensure t
+  :ensure
   :defer t
   :custom
   (eglot-sync-connect 1)
@@ -621,6 +625,8 @@
                   "--header-insertion=never"
                   "--header-insertion-decorators=0"))))
 
+(add-hook 'eglot-managed-mode-hook (lambda () (flymake-mode -1)))
+
 ;; Option 1: Specify explicitly to use Orderless for Eglot
 (setq completion-category-overrides '((eglot (styles orderless))
                                       (eglot-capf (styles orderless))))
@@ -628,11 +634,11 @@
 (defun my/eglot-setup-capf ()
   "Set buffer-local capfs for eglot buffers, combining eglot with snippets."
   (setq-local completion-at-point-functions
-              (list (cape-wrap-buster
-                     (cape-capf-super #'eglot-completion-at-point
-                                      #'yasnippet-capf))
-                    #'cape-file
-                    #'cape-dabbrev)))
+              (list 
+               (cape-capf-super
+		#'eglot-completion-at-point
+                #'yasnippet-capf))))
+
 
 (add-hook 'eglot-managed-mode-hook #'my/eglot-setup-capf)
 
