@@ -1,6 +1,4 @@
 ;; -*- lexical-binding: t; -*-
-(setenv "LSP_USE_PLISTS" "true") ;; in early-init.el
-
 (setq ;;file-name-handler-alist nil
       read-process-output-max (* 10 1024 1024) ;; 10mb
       gc-cons-threshold 200000000
@@ -35,9 +33,9 @@
 
 
 ;;(setq column-number-mode 1)
-(setopt tab-always-indent 'complete)
-					;(dolist (mode '(<<prog-modes-gen()>>))
-					;  (add-hook mode #'hs-minor-mode))
+(setopt tab-always-indent t)
+(setq read-extended-command-predicate #'command-completion-default-include-p)
+
 
 ;; Zoom
 (global-set-key (kbd "C-+") 'text-scale-increase)
@@ -65,13 +63,42 @@
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
+(setq-default indent-tabs-mode nil)
+
 (setq c-default-style "linux"
       c-basic-offset 4
-      indent-tabs-mode t
       fill-column 120
-      tab-width 8
+      tab-width 4
       )
 
+(setq comment-style 'multi-line)
+
+
+(add-hook 'python-mode-hook
+          (lambda ()
+            (setq-local indent-tabs-mode nil)
+            (setq-local tab-width 4)
+            (setq-local python-indent-offset 4)
+            ;; Disable indentation cycling so TAB always indents forward
+            (setq-local python-indent-trigger-commands nil)))
+
+
+;; NOTE TRAMP
+(setq tramp-default-method "ssh")
+(setq remote-file-name-inhibit-cache nil)
+(setq tramp-verbose 1)
+(setq vc-ignore-dir-regexp (format "%s\\|%s" vc-ignore-dir-regexp tramp-file-name-regexp))
+(setq tramp-persistency-file-name "~/.emacs.d/tramp")
+(setq vc-handled-backends nil)
+(setq tramp-completion-reread-directory-timeout nil)
+(setq tramp-backup-directory-alist backup-directory-alist)
+(setq tramp-copy-size-limit 1000000) ; Files larger than 1Mb use SCP maintaining SSH session
+(connection-local-set-profile-variables
+ 'remote-direct-async-process
+ '((tramp-direct-async-process . t)))
+(connection-local-set-profiles
+ '(:application tramp :protocol "scp")
+ 'remote-direct-async-process)
 
 ;; Package sources
 (require 'package)
@@ -231,7 +258,8 @@
                                    corfu-auto nil)
               (corfu-mode))
             nil
-            t))
+            t)
+    )
 
 
 (use-package cape
@@ -642,17 +670,26 @@
 
 (add-hook 'eglot-managed-mode-hook #'my/eglot-setup-capf)
 
+
+
+
+
+
+
+
+;; (use-package python-black
+;;   :ensure t
+;;   :demand t
+;;   :after python
+;;   :hook ((python-mode . python-black-on-save-mode)))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(org-agenda-files '("/home/yamamoto/Documents/org/work.org"))
- '(package-selected-packages
-   '(adaptive-wrap apheleia auctex-latexmk cape code-cells corfu corg doom-modeline dumb-jump evil-collection
-		   evil-nerd-commenter geiser general hl-todo jupyter lsp-mode orderless org-ref org-superstar pyvenv
-		   rainbow-delimiters treemacs-evil treemacs-icons-dired treemacs-projectile yasnippet-capf
-		   yasnippet-snippets))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces
