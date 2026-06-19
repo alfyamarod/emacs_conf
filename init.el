@@ -18,7 +18,7 @@
 (tooltip-mode -1)
 (blink-cursor-mode 0)
 (winner-mode t)
-(desktop-save-mode t)
+;;(desktop-save-mode t)
 (save-place-mode t)
 
 (load-theme 'modus-vivendi-deuteranopia)
@@ -404,7 +404,7 @@
   (setcar (cdr (assoc "Check" TeX-command-list)) "chktex -v6 -H %s")
   (add-hook 'TeX-mode-hook (lambda ()
                              (setq ispell-parser          'tex
-                                   fill-nobreak-predicate (cons #'texmathp fill-nobreak-predicate))))
+                                   fill-nobreak- redicate (cons #'texmathp fill-nobreak-predicate))))
   (add-hook 'TeX-mode-hook #'visual-line-mode)
   (add-hook 'TeX-update-style-hook #'rainbow-delimiters-mode)
   :general
@@ -489,6 +489,7 @@
    (latex . t)
    (python . t)
    (shell . t)
+   (jupyter . t)
    )
  )
 
@@ -574,11 +575,13 @@
   :config
   (global-hl-todo-mode)
   (setq hl-todo-keyword-faces
-	'(("TODO"   . "#FF0000")
+	    '(("TODO"   . "#FF0000")
           ("FIXME"  . "#FF0000")
           ("DEBUG"  . "#A020F0")
-	  ("NOTE"  . "#00FF32")
-	  ("TEMPORARY"  . "#FFFF32")
+	      ("NOTE"  . "#00FF20")
+	      ("DONE"  . "#00FF20")
+	      ("TEMPORARY"  . "#FFFF32")
+          ("FUTURE" . "#00FFFF")
 	  )
 	)
   )
@@ -586,7 +589,7 @@
 ;;; jupyter
 (use-package
   jupyter)
-
+(setq ob-async-no-async-languages-alist '("python" "jupyter-python"))
 ;;; code cells
 (use-package code-cells
   :init
@@ -643,6 +646,8 @@
     "l p" '(flymake-goto-prev-error :which-key "prev error")
     "l q" '(eglot-shutdown :which-key "shutdown")
     )
+  (setq eglot-ignored-server-capabilities '(:inlayHintProvider
+                                            :documentHighlightProvider))
   )
 
 (with-eval-after-load 'eglot
@@ -651,7 +656,10 @@
                . ("clangd"
                   "-j=2"
                   "--header-insertion=never"
-                  "--header-insertion-decorators=0"))))
+                  "--header-insertion-decorators=0"
+                  ))))
+
+
 
 (add-hook 'eglot-managed-mode-hook (lambda () (flymake-mode -1)))
 
@@ -670,13 +678,6 @@
 
 (add-hook 'eglot-managed-mode-hook #'my/eglot-setup-capf)
 
-
-
-
-
-
-
-
 ;; (use-package python-black
 ;;   :ensure t
 ;;   :demand t
@@ -688,7 +689,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(org-agenda-files '("/home/yamamoto/Documents/org/work.org"))
+ '(org-agenda-files
+   '("~/work/thesis/thesis.org" "/home/yamamoto/Documents/org/work.org"))
  '(package-selected-packages nil)
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
  '(warning-suppress-types '((use-package))))
