@@ -100,11 +100,17 @@
  '(:application tramp :protocol "scp")
  'remote-direct-async-process)
 
+(add-to-list 'vc-handled-backends 'Git)
+
+(setq package-install-upgrade-built-in t)
+
+
 ;; Package sources
 (require 'package)
 (setq package-archives '(("melpa". "https://melpa.org/packages/")
 			 ("org". "https://orgmode.org/elpa/")
 			 ("elpa". "https://elpa.gnu.org/packages/")
+             ("nongnu" . "https://elpa.nongnu.org/nongnu/")
 			 ))
 
 (package-initialize)
@@ -428,6 +434,7 @@
         LaTeX-fill-break-at-separators nil
         LaTeX-item-indent              0))
 
+
 (use-package adaptive-wrap
   :defer t
   :after auctex
@@ -494,6 +501,20 @@
  )
 
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+(with-eval-after-load 'ox-latex
+    (add-to-list 'org-latex-classes
+                 '("IEEEtran" "\\documentclass{IEEEtran}"
+                   ("\\section{%s}" . "\\section*{%s}")
+                   ("\\subsection{%s}" . "\\subsection*{%s}")
+                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))
+
+    (add-to-list 'org-latex-classes
+                 '("tubthesis" "\\documentclass{TUBthesis_new}"
+                   ("\\chapter{%s}" . "\\chapter*{%s}")
+                   ("\\section{%s}" . "\\section*{%s}")
+                   ("\\subsection{%s}" . "\\subsection*{%s}")
+                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+                 ))
 
 ;; FIXME warnings
 (use-package org-ref)
@@ -554,6 +575,9 @@
 (setq org-latex-packages-alist '(("" "tikz" t)
 				 ("" "tikz-cd" t)))
 
+(setq org-latex-pdf-process (list "latexmk -shell-escape -bibtex -f lualatex %f"))
+
+
 (use-package corg
   :vc (:url "https://github.com/isamert/corg.el"))
 
@@ -606,11 +630,6 @@
 
 (add-to-list 'auto-mode-alist '("\\.ipynb\\'" . python-mode))
 
-(defun my-md-to-org-region (start end)
-  "Convert region from markdown to org"
-  (interactive "r")
-  (shell-command-on-region start end "pandoc -f markdown -t org" t t))
-
 
 (use-package orderless
   :init
@@ -650,6 +669,8 @@
                                             :documentHighlightProvider))
   )
 
+
+
 (with-eval-after-load 'eglot
 (add-to-list 'eglot-server-programs
              '((c++-mode c-mode)
@@ -684,6 +705,156 @@
 ;;   :after python
 ;;   :hook ((python-mode . python-black-on-save-mode)))
 
+
+(use-package ess
+    :ensure t                   
+    :commands R
+    :mode (("\\.[rR]\\'" . ess-r-mode)
+           ("\\.Rprofile\\'" . ess-r-mode))
+    :interpreter ("Rscript" . ess-r-mode)
+    :custom
+    (ess-ask-for-ess-directory nil)
+    (ess-style 'RStudio)
+    (ess-r-outline-style 'RStudio)
+    (ess-use-ido nil)              ; Use your normal minibuffer completion
+    (ess-use-company nil)          ; Corfu uses ESS's completion-at-point
+    :hook
+    (ess-r-mode . outline-minor-mode)
+    :config
+    (alf/leader-keys
+      :keymaps 'ess-r-mode-map
+      "m"   '(:ignore t :which-key "R")
+      "m s" '(R :which-key "start R")
+      "m e" '(ess-eval-region-or-function-or-paragraph-and-step
+              :which-key "evaluate and step")
+      "m b" '(ess-eval-buffer :which-key "evaluate buffer")
+      "m r" '(ess-eval-region :which-key "evaluate region")
+      "m f" '(ess-eval-function :which-key "evaluate function")
+      "m z" '(ess-switch-to-inferior-or-script-buffer
+              :which-key "console/source")
+      "m h" '(ess-display-help-on-object :which-key "help at point")
+      "m q" '(ess-quit :which-key "quit R")))
+
+
+;; R markdown
+(use-package polymode)
+(use-package poly-R)
+(use-package poly-markdown)
+(use-package quarto-mode)
+;; MARKDOWN
+(add-to-list 'auto-mode-alist '("\\.md" . poly-markdown-mode))
+;; R modes
+(add-to-list 'auto-mode-alist '("\\.Snw" . poly-noweb+r-mode))
+(add-to-list 'auto-mode-alist '("\\.Rnw" . poly-noweb+r-mode))
+(add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
+(add-to-list 'auto-mode-alist '("\\.qmd" . poly-markdown+r-mode))
+
+
+(use-package minibuffer
+  :ensure nil
+  :config
+
+  ;; (setq completion-show-help nil)
+
+  (setq completion-show-inline-help nil)
+  (setq completions-detailed t)
+  (setq completions-format 'one-column)
+  (setq completions-max-height 12)
+  (setq completions-sort 'historical)
+  (setq completion-auto-help t)
+  (setq completion-auto-select nil minibuffer-visible-completions t)
+  ;;(setq completion-eaeger-display t)
+
+  )
+
+
+(use-package dune
+  :ensure t)
+
+
+(use-package tuareg
+  :ensure t
+  )
+
+(setq ocamlformat-command
+      (expand-file-name "ocamlfomart"
+                        (car (process-lines "opam" "var" "bin"))))
+
+(use-package ocamlformat
+  :custom (ocamlformat-enable 'enable-outside-detected-project)
+  :hook (before-save . ocamlformat-before-save)
+  )
+
+(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+      (when (and opam-share (file-directory-p opam-share))
+       ;; Register Merlin
+       (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+       (autoload 'merlin-mode "merlin" nil t nil)
+       ;; Automatically start it in OCaml buffers
+       (add-hook 'tuareg-mode-hook 'merlin-mode t)
+       (add-hook 'caml-mode-hook 'merlin-mode t)
+       ;; Use opam switch to lookup ocamlmerlin binary
+       (setq merlin-command 'opam)
+       ;; To easily change opam switches within a given Emacs session, you can
+       ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mode
+       ;; and use one of its "OPSW" menus.
+       ))
+
+
+
+(use-package codex
+  :vc (:url "https://github.com/benthamite/codex"))
+
+
+
+
+;; TODO 
+;; (require 'auth-source)
+
+;; (defvar alf/minuet-openai-key-cache nil)
+
+;; (defun alf/minuet-openai-key ()
+;;     (or alf/minuet-openai-key-cache
+;;         (let* ((entry (car (auth-source-search
+;;                             :host "api.openai.com"
+;;                             :user "apikey"
+;;                             :require '(:secret))))
+;;                (secret (plist-get entry :secret)))
+;;           (setq alf/minuet-openai-key-cache
+;;                 (if (functionp secret) (funcall secret) secret)))))
+
+
+;; (use-package minuet
+;;     :ensure t
+;;     :custom
+;;     (minuet-provider 'openai)
+;;     (minuet-n-completions 1)
+;;     (minuet-context-window 512)
+;;     (minuet-auto-suggestion-debounce-delay 0.6)
+;;     (minuet-auto-suggestion-throttle-delay 1.5)
+;;     :config
+;;     (plist-put minuet-openai-options :api-key #'alf/minuet-openai-key)
+;;     (minuet-set-optional-options minuet-openai-options :max_completion_tokens 256)
+;;     (minuet-set-optional-options minuet-openai-options :reasoning_effort "none")
+
+
+;;     :hook
+;;     (prog-mode . minuet-auto-suggestion-mode)
+;;     :bind
+;;     (:map minuet-active-mode-map
+;;           ("M-a" . minuet-accept-suggestion)
+;;           ("M-j" . minuet-next-suggestion)
+;;           ("M-p" . minuet-previous-suggestion)
+;;           ("M-e" . minuet-dismiss-suggestion))
+;;     :general
+;;     (alf/leader-keys
+;;       "a"   '(:ignore t :which-key "AI")
+;;       "a i" '(minuet-show-suggestion :which-key "suggest")
+;;       "a t" '(minuet-auto-suggestion-mode :which-key "toggle suggestions")
+;;       "a p" '(minuet-configure-provider :which-key "provider")))
+
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -691,7 +862,11 @@
  ;; If there is more than one, they won't work right.
  '(org-agenda-files
    '("~/work/thesis/thesis.org" "/home/yamamoto/Documents/org/work.org"))
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(adaptive-wrap apheleia auctex-latexmk cape code-cells codex corfu corg doom-modeline dumb-jump dune eat
+                   evil-collection evil-nerd-commenter geiser general hl-todo jupyter lsp-mode minuet ocamlformat
+                   orderless org-ref org-superstar poly-R python-black pyvenv quarto-mode rainbow-delimiters transient
+                   treemacs-evil treemacs-icons-dired treemacs-projectile tuareg yasnippet-capf yasnippet-snippets))
  '(package-vc-selected-packages '((corg :url "https://github.com/isamert/corg.el")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces
